@@ -2,7 +2,7 @@
 library(plyr)
 library(tidyverse)
 library(readxl)
-library(openxlsx)
+library(writexl)
 library(shiny)
 
 source("tab_cbr.R")
@@ -172,7 +172,7 @@ server <- function(input, output) {
       paste0("CBR_TABLES", ".xlsx")
     },
     content = function(file) {
-      write.xlsx(list_tables(), file)
+      write_xlsx(list_tables(), file)
     }
   )
 
