@@ -4,14 +4,18 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
   value <- match.arg(value, several.ok = TRUE)
   value <- sort(value)
   
+  #filter, if applicable
+  exprs <- quos(...)
+  if (length(exprs)>0) {
+    df <- df %>% 
+      filter(!!!exprs)
+  }
+  
   #convert to long format
   df <- df %>% 
     mutate_at(vars(vars_indicators), funs(as.numeric(.))) %>% 
     select(c(vars_demo, vars_indicators)) %>% 
     gather(key = "indicator", value = "resp", !!!rlang::syms(vars_indicators))
-  
-  #store ... expressions for transmute()
-  exprs <- quos(...)
   
   #initialize table
   tab <- df %>% 
@@ -51,11 +55,20 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
   }
   
   #sum resp (eg combine 4+5)
-  tab <- tab %>% 
-    group_by(indicator) %>% 
-    mutate_at(vars(c(starts_with("n"), starts_with("prop"))), funs(as.numeric(.))) %>% 
-    summarize_all(funs(sum)) %>% 
-    select(-resp)
+  if (!is.null(resp_values)) {
+    tab <- tab %>% 
+      group_by(indicator) %>% 
+      mutate_at(vars(c(starts_with("n"), starts_with("prop"))), funs(as.numeric(.))) %>% 
+      summarize_all(funs(sum(.,na.rm = TRUE))) %>% 
+      select(-resp)
+  }
+  
+  
+  #FIX: ordering of indicator column
+  #FIX: ordering of demographic columns
+  #FIX: total columns and rows
+  #FIX: all possible response options kept
+  #FIX: keep response option labels
   
   return(tab)
 }
