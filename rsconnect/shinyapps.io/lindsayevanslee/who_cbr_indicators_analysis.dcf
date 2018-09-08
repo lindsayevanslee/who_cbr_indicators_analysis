@@ -5,6 +5,8 @@ account: lindsayevanslee
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 353199
-bundleId: 1407468
+bundleId: 1408615
 url: https://lindsayevanslee.shinyapps.io/who_cbr_indicators_analysis/
-when: 1527972287.30383
+when: 1528033043.30428
+asMultiple: FALSE
+asStatic: FALSE
