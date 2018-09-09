@@ -8,10 +8,12 @@
 #' @param na_rm_demo logical indicating whether to remove missing values for the demographic variables
 #' @param na_rm_resp logical indicating whether to remove missing values for indicator variables
 #' @param resp_values vectors of indicator values to include in the table. Default is NULL, to include all available values
+#' @param total_row logical indicating whether to include a row of totals
+#' @param total_col logical indicating whether to include a column of totals
 #'
 #' @return a tibble
 #' @export
-tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"), na_rm_demo = TRUE, na_rm_resp = TRUE, resp_values = NULL) {
+tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"), na_rm_demo = TRUE, na_rm_resp = TRUE, resp_values = NULL, total_row = FALSE, total_col = FALSE) {
   
   #make sure value is correct, and in the order desired
   value <- match.arg(value, several.ok = TRUE)
@@ -78,10 +80,23 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
   if (na_rm_demo) tab <- tab %>% filter_at(vars_demo, all_vars(!is.na(.)))
   
   #complete missing cases
-  tab <- tab %>% 
-    ungroup() %>%
-    complete(!!!rlang::syms(vars_demo), indicator, resp, 
-             fill = list(n = 0, prop = 0))
+  if (all(c("n", "prop") %in% value)) {
+    tab <- tab %>% 
+      ungroup() %>%
+      complete(!!!rlang::syms(vars_demo), indicator, resp, 
+               fill = list(n = 0, prop = 0))
+  } else if (value == "n") {
+    tab <- tab %>% 
+      ungroup() %>%
+      complete(!!!rlang::syms(vars_demo), indicator, resp, 
+               fill = list(n = 0))
+  } else if (value == "prop") {
+    tab <- tab %>% 
+      ungroup() %>%
+      complete(!!!rlang::syms(vars_demo), indicator, resp, 
+               fill = list(prop = 0))
+  }
+
   
 
   #unite vars_demo columns
@@ -121,8 +136,6 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
       ungroup() %>% 
       rename_at(.vars = vars(demo_col_order), .funs = funs(paste(value, ., sep = "---")))
   }
-  
-  print(tab, n=100)
   
   #filter resp and sum resp (eg keep just 4+5)
   if (!is.null(resp_values)) {
