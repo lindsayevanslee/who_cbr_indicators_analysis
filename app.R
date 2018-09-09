@@ -11,19 +11,18 @@ source("tab_cbr.R")
 ui <- fluidPage(
   
   # Application title
-  titlePanel("CBR Indicators Tables"),
+  titlePanel("Generate CBR indicators tables"),
   
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
-      fileInput("df", "Upload an XLSX file",
+      fileInput("df", "Upload an XLSX file for your implementation from the database online at Ona.io",
                 multiple = FALSE,
                 accept = c(".xlsx"),
                 buttonLabel = "Browse...",
                 placeholder = "Please upload an XLSX file")
     ),
     
-    # Show a plot of the generated distribution
     mainPanel(
       textOutput("statusUpload"),
       textOutput("statusTables"),
@@ -235,14 +234,14 @@ server <- function(input, output) {
   # status of upload ----------
   output$statusUpload <- renderText({
     
-    if (is.null(df_uploaded())) print("No file uploaded yet")
+    if (is.null(df_uploaded())) print("No file uploaded yet.")
     else print("Thank you for uploading a file.")
   })
   
   # status of table rendering
   output$statusTables <- renderText({
-    if (is.null(list_tables())) print("Tables not yet created.")
-    else print("Tables are printed.")
+    if (is.null(list_tables())) print("Awaiting file upload.")
+    else print("Tables have been generated. Please download them by clicking the button below:")
     
   })
   
@@ -265,6 +264,6 @@ server <- function(input, output) {
   
 }
 
-# Run the application 
+# Run the application -----------------
 shinyApp(ui = ui, server = server)
 
