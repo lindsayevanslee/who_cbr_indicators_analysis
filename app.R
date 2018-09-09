@@ -149,11 +149,11 @@ server <- function(input, output) {
     
     if (!is.null(df_uploaded())) {
       list(
-        table2_1 = tab_cbr(df_uploaded(), vars_indicators = c("AGE"), vars_demo = c("I04"), value = "n"), #FIX
-        table2_2 = tab_cbr(df_uploaded(), vars_indicators = c("AGE"), vars_demo = c("I05", "I04"), value = "n"), #FIX
-        table3 = tab_cbr(df_uploaded(), vars_indicators = "I05", vars_demo = c("I04")) %>% 
-          bind_rows(tab_cbr(df_uploaded(), vars_indicators = "I09", vars_demo = c("I04"))) %>% 
-          bind_rows(tab_cbr(df_uploaded(), vars_indicators = "E01", vars_demo = c("I04"))), # FIX
+        table2_1 = tab_cbr(df_uploaded(), vars_indicators = c("AGE"), vars_demo = c("I04"), value = "n", total_col = TRUE, total_row = TRUE),
+        table2_2 = tab_cbr(df_uploaded(), vars_indicators = c("AGE"), vars_demo = c("I05", "I04"), value = "n", total_col = TRUE, total_row = TRUE), 
+        table3 = tab_cbr(df_uploaded(), vars_indicators = "I05", vars_demo = c("I04"), total_col = TRUE) %>% 
+          bind_rows(tab_cbr(df_uploaded(), vars_indicators = "I09", vars_demo = c("I04"), total_col = TRUE)) %>% 
+          bind_rows(tab_cbr(df_uploaded(), vars_indicators = "E01", vars_demo = c("I04"), total_col = TRUE)), 
         table4_1 = tab_cbr(df_uploaded(), vars_indicators = c("H01"), vars_demo = c("I04"), AGE=="Adult", resp_values = 1:2) %>% 
           bind_rows(tab_cbr(df_uploaded(), vars_indicators = c("H02"), vars_demo = c("I04"), AGE=="Adult", resp_values = 4:5)),
         table4_2 = tab_cbr(df_uploaded(), vars_indicators = c("H01"), vars_demo = c("I05", "I04"), AGE=="Adult", resp_values = 1:2, value = "prop") %>% 

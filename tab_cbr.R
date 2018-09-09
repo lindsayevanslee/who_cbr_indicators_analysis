@@ -72,13 +72,16 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
   tab <- df %>% 
     group_by_at(c(vars_demo, "indicator", "resp")) %>%
     summarize(n=n())
-  if ("prop" %in% value) tab <- tab %>% mutate(prop = round(n/sum(n)*100,1))
-  if (identical(value, "prop")) tab <- tab %>% select(-n)
   
   #filter NAs
   if (na_rm_resp) tab <- tab %>% filter(!is.na(resp))
   if (na_rm_demo) tab <- tab %>% filter_at(vars_demo, all_vars(!is.na(.)))
   
+  #add prop if applicable
+  if ("prop" %in% value) tab <- tab %>% mutate(prop = round(n/sum(n)*100,1))
+  if (identical(value, "prop")) tab <- tab %>% select(-n)
+  
+
   #complete missing cases
   if (all(c("n", "prop") %in% value)) {
     tab <- tab %>% 
@@ -97,7 +100,6 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
                fill = list(prop = 0))
   }
 
-  
 
   #unite vars_demo columns
   tab <- tab %>% unite("demo", !!!rlang::syms(vars_demo))
@@ -120,9 +122,7 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
                  demo_col_order)
   tab <- tab %>% select(col_order)
   
-  
-  
-  
+
   #separate n and pct, if applicable
   if (all(c("n", "prop") %in% value)) {
     vars_to_separate <- names(tab)[which(!(names(tab) %in% c("indicator", "resp")))]
@@ -154,8 +154,100 @@ tab_cbr <- function(df, vars_indicators, vars_demo, ..., value = c("n", "prop"),
       arrange(match(resp, resp_original))
   }
   
-  #FIX: total columns and rows
+  #convert numbers to numeric
+  tab <- tab %>% 
+    mutate_at(vars(-one_of(c("indicator", "resp"))), funs(as.numeric(.)))
   
   
+  #add total row
+  if (total_row) {
+    
+    if (length(vars_indicators)>1) stop("You can only add a total row if the table is build for only one indicator (length(vars_indicator)==1).")
+    if (!is.null(resp_values)) stop("A total row can only be added if response options are not collapsed (resp_values is NULL)")
+    
+    row_total <- tab %>% 
+      ungroup() %>% 
+      select(-one_of(c("indicator", "resp"))) %>% 
+      colSums()  %>% 
+      as.data.frame() %>% 
+      add_column(indicator = "total",
+                 resp = "total",
+                 .before = 1) %>% 
+      rownames_to_column(var = "type") %>% 
+      rename("value"=".") %>% 
+      spread(type, value)
+    
+    tab <- tab %>% 
+      full_join(row_total)
+
+  }
+  
+  #add total column
+  if (total_col) {
+    col_total <- df %>% 
+      group_by_at(c("indicator", "resp")) %>%
+      summarize(n=n()) 
+    
+    #filter NAs
+    if (na_rm_resp) col_total <- col_total %>% filter(!is.na(resp))
+    
+    #add prop if applicable
+    if ("prop" %in% value) col_total <- col_total %>% mutate(prop = round(n/sum(n)*100,1))
+    if (identical(value, "prop")) col_total <- col_total %>% select(-n)
+    
+    #complete missing cases
+    if (all(c("n", "prop") %in% value)) {
+      col_total <- col_total %>% 
+        ungroup() %>%
+        complete(indicator, resp, 
+                 fill = list(n = 0, prop = 0))
+    } else if (value == "n") {
+      col_total <- col_total %>% 
+        ungroup() %>%
+        complete(indicator, resp, 
+                 fill = list(n = 0))
+    } else if (value == "prop") {
+      col_total <- col_total %>% 
+        ungroup() %>%
+        complete(indicator, resp, 
+                 fill = list(prop = 0))
+    }
+    
+    #rename n and prop
+    col_total <- col_total %>% 
+      ungroup() %>% 
+      rename_at(vars(value), funs(paste0("total_", .)))
+    
+    #filter and sum resp_values (if applicable)
+    if (!is.null(resp_values)) {
+      col_total <- col_total %>%
+        filter(resp %in% resp_values) %>% 
+        group_by(indicator) %>% 
+        mutate_at(vars(-one_of(c("resp"))), funs(as.numeric(.))) %>%
+        summarize_at(vars(-one_of(c("resp"))), funs(sum(., na.rm = TRUE))) 
+    }
+    
+    #add total row to total column if applicable
+    if (total_row) {
+      
+        col_total <- col_total %>% 
+          bind_rows(col_total %>% 
+                      select(paste0("total_", value)) %>% 
+                      colSums() %>% 
+                      as.data.frame() %>% 
+                      add_column(indicator = "total",
+                                 resp = "total",
+                                 .before = 1) %>% 
+                      rownames_to_column(var = "type") %>% 
+                      rename("value"=".") %>% 
+                      spread(type, value))
+    }
+    
+    
+    tab <- tab %>% 
+      left_join(col_total)
+  }
+  
+ 
   return(tab)
 }
